@@ -1,0 +1,104 @@
+import itertools
+import math
+
+# Earth's mean radius in miles
+EARTH_RADIUS_MILES = 3958.8
+
+
+def haversine_distance(coord1, coord2):
+    """Calculates the great-circle distance between two (lat, lon) coordinates in miles."""
+    lat1, lon1 = coord1
+    lat2, lon2 = coord2
+
+    # Convert degrees to radians
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    delta_phi = math.radians(lat2 - lat1)
+    delta_lambda = math.radians(lon2 - lon1)
+
+    # Haversine formula
+    a = (
+        math.sin(delta_phi / 2) ** 2
+        + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2) ** 2
+    )
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+    return EARTH_RADIUS_MILES * c
+
+
+def optimize_campus_tour(campuses, start_campus_name):
+    """Finds an optimized route starting from a specified campus using a Greedy Nearest Neighbor algorithm.
+
+    :param campuses: dict mapping campus names to (lat, lon) tuples
+    :param start_campus_name: string name of the starting college
+    :return: (route_list, total_distance)
+    """
+    if start_campus_name not in campuses:
+        raise ValueError(
+            f"Starting campus '{start_campus_name}' not found in provided list."
+        )
+
+    unvisited = set(campuses.keys())
+    current_campus = start_campus_name
+    unvisited.remove(current_campus)
+
+    route = [current_campus]
+    total_distance = 0.0
+
+    while unvisited:
+        # Find the closest unvisited campus to current_campus
+        nearest_campus = None
+        min_distance = float("inf")
+
+        for next_campus in unvisited:
+            dist = haversine_distance(
+                campuses[current_campus], campuses[next_campus]
+            )
+            if dist < min_distance:
+                min_distance = dist
+                nearest_campus = next_campus
+
+        # Move to the nearest campus
+        route.append(nearest_campus)
+        total_distance += min_distance
+        current_campus = nearest_campus
+        unvisited.remove(current_campus)
+
+    return route, total_distance
+
+
+# --- Sample Data: Oregon Colleges ---
+oregon_colleges = {
+    "Reed College": (45.4809, -122.6306),
+    "Portland State University": (45.5113, -122.6845),
+    "Lewis & Clark College": (45.4541, -122.6710),
+    "University of Oregon (Eugene)": (44.0448, -123.0726),
+    "Oregon State University (Corvallis)": (44.5638, -123.2794),
+    "Willamette University (Salem)": (44.9358, -123.0311),
+}
+
+# --- Execution ---
+if __name__ == "__main__":
+    start_point = "Portland State University"
+
+    route, distance = optimize_campus_tour(oregon_colleges, start_point)
+
+    print("=" * 55)
+    print(f" CAMPUS TOUR ROUTE OPTIMIZER")
+    print("=" * 55)
+    print(f"Starting Point: {start_point}\n")
+
+    print("Optimized Leg-by-Leg Itinerary:")
+    print("-" * 55)
+
+    cumulative_dist = 0.0
+    for i in range(len(route) - 1):
+        c1, c2 = route[i], route[i + 1]
+        leg_dist = haversine_distance(oregon_colleges[c1], oregon_colleges[c2])
+        cumulative_dist += leg_dist
+        print(f" {i+1}. {c1}  --->  {c2}")
+        print(
+            f"    Leg Distance: {leg_dist:.2f} miles | Total so far: {cumulative_dist:.2f} miles"
+        )
+
+    print("-" * 55)
+    print(f"TOTAL TOUR DISTANCE: {distance:.2f} miles\n")
