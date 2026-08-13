@@ -1,0 +1,207 @@
+import math
+from datetime import datetime
+
+EARTH_RADIUS_MILES = 3958.8
+
+
+def haversine_distance(coord1, coord2):
+    """Calculates Great-Circle distance between two (lat, lon) points in miles."""
+    lat1, lon1 = coord1
+    lat2, lon2 = coord2
+
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    delta_phi = math.radians(lat2 - lat1)
+    delta_lambda = math.radians(lon2 - lon1)
+
+    a = (
+        math.sin(delta_phi / 2) ** 2
+        + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2) ** 2
+    )
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return EARTH_RADIUS_MILES * c
+
+
+class FoodPantry:
+
+    def __init__(
+        self, pantry_id, name, address, location, hours, contact_phone
+    ):
+        self.pantry_id = pantry_id
+        self.name = name
+        self.address = address
+        self.location = location  # (latitude, longitude)
+        self.hours = hours
+        self.contact_phone = contact_phone
+
+        # Resource Tracking
+        # Categories: "Critical Need", "Low Stock", "Sufficient"
+        self.inventory_status = {}
+        self.open_volunteer_shifts = []
+
+    def update_item_status(self, item_name, status):
+        """Update or add stock status for a specific item/category."""
+        self.inventory_status[item_name] = status
+
+    def add_volunteer_shift(self, shift_date, time_slot, spots_needed):
+        """Add an upcoming volunteer shift."""
+        self.open_volunteer_shifts.append(
+            {
+                "date": shift_date,
+                "time": time_slot,
+                "spots_needed": spots_needed,
+            }
+        )
+
+    def display_details(self, user_location=None):
+        """Prints formatted pantry summary."""
+        print(f"\n{'='*60}")
+        print(f"🏠 {self.name.upper()}")
+        print(f"{'='*60}")
+        print(f"📍 Address: {self.address}")
+        print(f"📞 Contact: {self.contact_phone}")
+        print(f"⏰ Hours:   {self.hours}")
+
+        if user_location:
+            dist = haversine_distance(user_location, self.location)
+            print(f"🚗 Distance: {dist:.2f} miles away")
+
+        print("\n🛒 Urgent Item Needs / Stock Levels:")
+        if not self.inventory_status:
+            print("   (No inventory alerts posted)")
+        else:
+            for item, status in self.inventory_status.items():
+                icon = (
+                    "🔴"
+                    if status == "Critical Need"
+                    else "🟡" if status == "Low Stock" else "🟢"
+                )
+                print(f"   {icon} {item}: {status}")
+
+        print("\n🤝 Open Volunteer Shifts:")
+        if not self.open_volunteer_shifts:
+            print("   (No open shifts currently listed)")
+        else:
+            for i, shift in enumerate(self.open_volunteer_shifts, 1):
+                print(
+                    f"   {i}. Date: {shift['date']} | Time: {shift['time']} | "
+                    f"Spots Needed: {shift['spots_needed']}"
+                )
+
+
+class CommunityResourceManager:
+
+    def __init__(self):
+        self.pantries = {}
+
+    def add_pantry(self, pantry):
+        self.pantries[pantry.pantry_id] = pantry
+
+    def find_pantries_nearby(self, user_location, max_radius_miles):
+        """Returns pantries sorted by distance within the specified radius."""
+        nearby = []
+        for pantry in self.pantries.values():
+            dist = haversine_distance(user_location, pantry.location)
+            if dist <= max_radius_miles:
+                nearby.append((pantry, dist))
+
+        # Sort by closest distance
+        nearby.sort(key=lambda x: x[1])
+        return nearby
+
+    def search_by_critical_need(self, item_keyword):
+        """Finds pantries urgently requiring a specific donated item."""
+        matches = []
+        for pantry in self.pantries.values():
+            for item, status in pantry.inventory_status.items():
+                if (
+                    item_keyword.lower() in item.lower()
+                    and status in ["Critical Need", "Low Stock"]
+                ):
+                    matches.append((pantry, item, status))
+        return matches
+
+
+# --- Seed Sample Data ---
+def initialize_sample_data():
+    manager = CommunityResourceManager()
+
+    # Center Point Reference: Downtown Eugene, OR (44.0521, -123.0868)
+    p1 = FoodPantry(
+        pantry_id="P1",
+        name="Central Community Food Pantry",
+        address="123 Main St, Eugene, OR",
+        location=(44.0521, -123.0868),
+        hours="Mon-Fri: 9:00 AM - 4:00 PM",
+        contact_phone="(541) 555-0100",
+    )
+    p1.update_item_status("Baby Formula", "Critical Need")
+    p1.update_item_status("Canned Protein (Tuna/Chicken)", "Low Stock")
+    p1.update_item_status("Warm Blankets", "Critical Need")
+    p1.add_volunteer_shift("2026-08-15", "9:00 AM - 12:00 PM", 4)
+    p1.add_volunteer_shift("2026-08-16", "1:00 PM - 4:00 PM", 2)
+
+    p2 = FoodPantry(
+        pantry_id="P2",
+        name="Westside Hope Distribution",
+        address="789 West 11th Ave, Eugene, OR",
+        location=(44.0475, -123.1201),
+        hours="Tue & Thu: 10:00 AM - 6:00 PM",
+        contact_phone="(541) 555-0199",
+    )
+    p2.update_item_status("Fresh Produce", "Low Stock")
+    p2.update_item_status("Hygiene Kits", "Critical Need")
+    p2.add_volunteer_shift("2026-08-15", "10:00 AM - 2:00 PM", 3)
+
+    p3 = FoodPantry(
+        pantry_id="P3",
+        name="Springfield Table & Shelter",
+        address="456 Main St, Springfield, OR",
+        location=(44.0462, -123.0221),
+        hours="Mon-Sat: 8:00 AM - 2:00 PM",
+        contact_phone="(541) 555-0144",
+    )
+    p3.update_item_status("Baby Formula", "Low Stock")
+    p3.update_item_status("Rice & Beans", "Sufficient")
+    p3.add_volunteer_shift("2026-08-17", "8:00 AM - 12:00 PM", 5)
+
+    manager.add_pantry(p1)
+    manager.add_pantry(p2)
+    manager.add_pantry(p3)
+
+    return manager
+
+
+# --- Demonstration Run ---
+if __name__ == "__main__":
+    system = initialize_sample_data()
+
+    # User starting location (e.g., University area: 44.0448, -123.0726)
+    user_location = (44.0448, -123.0726)
+    search_radius = 5.0  # miles
+
+    print("============================================================")
+    print("      COMMUNITY FOOD PANTRY & RESOURCE MAPPER DEMO          ")
+    print("============================================================")
+
+    # 1. Nearby Pantry Search
+    print(
+        f"\n🔍 Searching for pantries within {search_radius} miles of current location..."
+    )
+    results = system.find_pantries_nearby(user_location, search_radius)
+
+    for pantry, dist in results:
+        pantry.display_details(user_location)
+
+    # 2. Searching by specific critical needs
+    target_item = "Baby Formula"
+    print(
+        f"\n\n📢 Searching for facilities urgently needing: '{target_item}'..."
+    )
+    print("-" * 60)
+    item_matches = system.search_by_critical_need(target_item)
+
+    for pantry, item, status in item_matches:
+        icon = "🔴" if status == "Critical Need" else "🟡"
+        print(
+            f"{icon} {pantry.name} | Needs: {item} ({status}) | Call: {pantry.contact_phone}"
+        )
