@@ -1,2 +1,2 @@
 # general
-General program to perform string manipulation
+General programs mostly related to problem that we face during High school days
