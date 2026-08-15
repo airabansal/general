@@ -79,10 +79,11 @@ if __name__ == "__main__":
     ]
 
     tutees = [
+        Tutee("Aira Bansal", "Chemistry", ["Wed-P7", "Tue-P7"]),  # Added student
         Tutee("Sam", "Chemistry", ["Wed-P7"]),
         Tutee("Maya", "Algebra", ["Mon-P7", "Thu-P7"]),
         Tutee("Chris", "Chemistry", ["Mon-P7", "Wed-P7"]),
-        Tutee("Jamie", "Physics", ["Tue-P7"]),  # No matching tutor
+        Tutee("Jamie", "Physics", ["Tue-P7"]),
     ]
 
     matcher = TutoringMatcher(tutors, tutees)
