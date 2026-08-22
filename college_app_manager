@@ -1,0 +1,165 @@
+from datetime import datetime, timedelta
+import heapq
+
+
+class RecLetterRequest:
+
+    def __init__(self, recommender_name, role, subject_subject, status="Requested"):
+        """Tracks the status of a Letter of Recommendation (LOR).
+
+        :param recommender_name: str (e.g., "Dr. Smith")
+        :param role: str (e.g., "Teacher", "Counselor")
+        :param subject_subject: str (e.g., "AP Chemistry", "Math")
+        :param status: str ("Requested", "Confirmed", "Submitted")
+        """
+        self.recommender_name = recommender_name
+        self.role = role
+        self.subject = subject_subject
+        self.status = status
+        self.requested_date = datetime.now().date()
+
+    def update_status(self, new_status):
+        self.status = new_status
+
+
+class CollegeApplication:
+
+    def __init__(
+        self, college_name, deadline_str, priority=2, lor_required=2
+    ):
+        """Represents a college application milestone in the queue.
+
+        :param college_name: str
+        :param deadline_str: str ("YYYY-MM-DD")
+        :param priority: int (1 = Highest/Critical, 2 = Normal, 3 = Low)
+        :param lor_required: int (Number of required LORs)
+        """
+        self.college_name = college_name
+        self.deadline = datetime.strptime(deadline_str, "%Y-%m-%d").date()
+        self.priority = priority
+        self.lor_required = lor_required
+        self.assigned_lors = []
+        self.is_submitted = False
+
+    def __lt__(self, other):
+        """Heap comparison: Earliest deadline first, then highest priority (lowest integer)."""
+        if self.deadline == other.deadline:
+            return self.priority < other.priority
+        return self.deadline < other.deadline
+
+    def attach_lor(self, lor_request):
+        """Attaches a recommendation letter request to this college application."""
+        self.assigned_lors.append(lor_request)
+
+    def days_remaining(self, current_date):
+        return (self.deadline - current_date).days
+
+
+class ApplicationManager:
+
+    def __init__(self):
+        self.app_queue = []  # Min-Heap storage for applications
+        self.recommenders = []  # Master list of LOR requests
+
+    def add_application(
+        self, college_name, deadline_str, priority=2, lor_required=2
+    ):
+        """Creates and pushes an application onto the priority queue."""
+        app = CollegeApplication(
+            college_name, deadline_str, priority, lor_required
+        )
+        heapq.heappush(self.app_queue, app)
+        return app
+
+    def add_recommender(self, name, role, subject):
+        """Registers a teacher/counselor recommendation request."""
+        lor = RecLetterRequest(name, role, subject)
+        self.recommenders.append(lor)
+        return lor
+
+    def print_dashboard(self, simulated_today_str):
+        """Prints a comprehensive queue dashboard."""
+        today = datetime.strptime(simulated_today_str, "%Y-%m-%d").date()
+
+        print("=" * 70)
+        print("    COLLEGE APPLICATION & RECOMMENDATION LETTER TRACKER    ")
+        print("=" * 70)
+        print(f"📅 Simulated Today's Date: {today}\n")
+
+        # Section 1: Recommendation Letter Readiness
+        print("👥 RECOMMENDATION LETTER STATUS")
+        print("-" * 70)
+        if not self.recommenders:
+            print("   No LOR requests registered.")
+        else:
+            for lor in self.recommenders:
+                status_symbol = (
+                    "✅" if lor.status == "Submitted" else "⏳"
+                )
+                print(
+                    f"   {status_symbol} {lor.recommender_name:<18} ({lor.role} - {lor.subject})"
+                )
+                print(f"      Status: {lor.status}")
+
+        # Section 2: Priority Queue Dashboard
+        print("\n📋 UPCOMING APPLICATION DEADLINES (PRIORITY QUEUE)")
+        print("-" * 70)
+
+        # Extract sorted copy without popping queue
+        ordered_apps = sorted(self.app_queue)
+
+        for app in ordered_apps:
+            days_left = app.days_remaining(today)
+            urgency = (
+                "🚨 URGENT"
+                if days_left <= 14
+                else ("⚠️  SOON" if days_left <= 30 else "⏱️  SCHEDULED")
+            )
+            prio_tag = f"P{app.priority}"
+
+            # Calculate LOR fulfillment
+            submitted_lors = sum(
+                1 for l in app.assigned_lors if l.status == "Submitted"
+            )
+            lor_status_str = f"{submitted_lors}/{app.lor_required} LORs Ready"
+
+            print(
+                f"[{urgency}] {app.deadline} ({days_left:2d} days left) | [{prio_tag}] {app.college_name}"
+            )
+            print(f"             LOR Readiness: {lor_status_str}")
+            print()
+
+        print("=" * 70)
+
+
+# --- Execution Example ---
+if __name__ == "__main__":
+    manager = ApplicationManager()
+
+    # 1. Register Recommenders
+    lor1 = manager.add_recommender("Dr. Smith", "Teacher", "Chemistry")
+    lor2 = manager.add_recommender(
+        "Ms. Davis", "Counselor", "Guidance"
+    )
+
+    # 2. Add Applications to Priority Queue
+    app_osu = manager.add_application(
+        "Oregon State University", "2026-10-15", priority=1, lor_required=1
+    )
+    app_uo = manager.add_application(
+        "University of Oregon", "2026-11-01", priority=1, lor_required=2
+    )
+    app_uw = manager.add_application(
+        "UW Seattle", "2026-11-15", priority=2, lor_required=2
+    )
+
+    # 3. Attach LORs to Applications
+    app_osu.attach_lor(lor1)
+    app_uo.attach_lor(lor1)
+    app_uo.attach_lor(lor2)
+
+    # Simulate Dr. Smith submitting their letter
+    lor1.update_status("Submitted")
+
+    # 4. View Dashboard
+    manager.print_dashboard("2026-09-25")
