@@ -1,0 +1,53 @@
+class SATDiagnosticTracker:
+
+    def __init__(self, target_colleges_75th=None):
+        # 75th percentile scores for target schools
+        self.target_colleges = target_colleges_75th or {
+            "University of Oregon": {"math": 680, "rw": 670},
+            "Oregon State University": {"math": 670, "rw": 650},
+            "UW Seattle": {"math": 750, "rw": 720},
+        }
+        self.test_attempts = []
+
+    def log_test(self, test_date, math_score, rw_score, missed_topics=None):
+        attempt = {
+            "date": test_date,
+            "math": math_score,
+            "rw": rw_score,
+            "total": math_score + rw_score,
+            "missed_topics": missed_topics or [],
+        }
+        self.test_attempts.append(attempt)
+
+    def calculate_superscore(self):
+        if not self.test_attempts:
+            return 0, 0, 0
+        best_math = max(t["math"] for t in self.test_attempts)
+        best_rw = max(t["rw"] for t in self.test_attempts)
+        return best_math, best_rw, best_math + best_rw
+
+    def generate_gap_report(self):
+        best_m, best_rw, total_super = self.calculate_superscore()
+        report = []
+        for college, targets in self.target_colleges.items():
+            m_gap = targets["math"] - best_m
+            rw_gap = targets["rw"] - best_rw
+            report.append(
+                {
+                    "college": college,
+                    "superscore_total": total_super,
+                    "math_gap": max(0, m_gap),
+                    "rw_gap": max(0, rw_gap),
+                    "on_target": m_gap <= 0 and rw_gap <= 0,
+                }
+            )
+        return report
+
+
+# --- Quick Usage ---
+tracker = SATDiagnosticTracker()
+tracker.log_test("2026-03-14", math_score=660, rw_score=640)
+tracker.log_test("2026-05-02", math_score=710, rw_score=620)
+
+best_m, best_rw, super_total = tracker.calculate_superscore()
+print(f"Superscore: {super_total} (Math: {best_m}, R/W: {best_rw})")
