@@ -1,0 +1,135 @@
+import json
+from datetime import datetime
+
+
+class ClubBudgetTracker:
+
+    def __init__(self, club_name, total_budget):
+        """Initializes club budget and expense records.
+
+        :param club_name: str (e.g., "Robotics Team", "Key Club")
+        :param total_budget: float (Total approved starting funds)
+        """
+        self.club_name = club_name
+        self.total_budget = float(total_budget)
+        self.expenses = []  # List of expense dictionaries
+
+    def add_expense(self, item_name, amount, category, spent_by):
+        """Logs a new expense transaction.
+
+        :param item_name: str (e.g., "3D Printer Filament")
+        :param amount: float (Cost of item)
+        :param category: str (e.g., "Supplies", "Travel", "Food", "Events")
+        :param spent_by: str (Member/Officer who bought it)
+        """
+        expense = {
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "item": item_name,
+            "amount": float(amount),
+            "category": category,
+            "spent_by": spent_by,
+        }
+        self.expenses.append(expense)
+        print(f"✅ Added Expense: {item_name} (${amount:.2f})")
+
+    def get_total_spent(self):
+        """Calculates sum of all logged expenses."""
+        return sum(e["amount"] for e in self.expenses)
+
+    def get_remaining_budget(self):
+        """Calculates remaining available funds."""
+        return self.total_budget - self.get_total_spent()
+
+    def get_category_breakdown(self):
+        """Aggregates spending totals by category."""
+        breakdown = {}
+        for e in self.expenses:
+            cat = e["category"]
+            breakdown[cat] = breakdown.get(cat, 0.0) + e["amount"]
+        return breakdown
+
+    def print_summary_dashboard(self):
+        """Prints a clean financial dashboard for club officers and faculty advisors."""
+        total_spent = self.get_total_spent()
+        remaining = self.get_remaining_budget()
+        pct_used = (
+            (total_spent / self.total_budget * 100)
+            if self.total_budget > 0
+            else 0
+        )
+
+        print("\n" + "=" * 65)
+        print(f"       FINANCIAL DASHBOARD: {self.club_name.upper()}       ")
+        print("=" * 65)
+
+        # Overall Status
+        status_flag = "⚠️  LOW FUNDS" if remaining < 100 else "🟢 HEALTHY"
+        print(f"📊 BUDGET OVERVIEW [{status_flag}]")
+        print(f"   • Starting Budget : ${self.total_budget:,.2f}")
+        print(f"   • Total Spent     : ${total_spent:,.2f} ({pct_used:.1f}%)")
+        print(f"   • Remaining Funds : ${remaining:,.2f}")
+
+        # Category Breakdown Table
+        print("\n📁 SPENDING BY CATEGORY")
+        print("-" * 65)
+        categories = self.get_category_breakdown()
+        if not categories:
+            print("   No expenses recorded yet.")
+        else:
+            for cat, amt in categories.items():
+                cat_pct = (amt / total_spent * 100) if total_spent > 0 else 0
+                print(f"   • {cat:<15} : ${amt:>8.2f}  ({cat_pct:>5.1f}% of spent)")
+
+        # Transaction Ledger
+        print("\n🧾 RECENT TRANSACTIONS")
+        print("-" * 65)
+        if not self.expenses:
+            print("   No transactions found.")
+        else:
+            print(
+                f"   {'Date':<12} | {'Item':<22} | {'Category':<10} | {'Amount':<8}"
+            )
+            print("   " + "-" * 58)
+            for e in self.expenses:
+                print(
+                    f"   {e['date']:<12} | {e['item']:<22} | {e['category']:<10} | ${e['amount']:>7.2f}"
+                )
+
+        print("=" * 65 + "\n")
+
+
+# --- Demonstration Run ---
+if __name__ == "__main__":
+    # Create a new budget tracker for high school Robotics Club with $1,500 budget
+    robotics_club = ClubBudgetTracker(
+        club_name="Robotics Team #404", total_budget=1500.00
+    )
+
+    # Log sample club expenses
+    robotics_club.add_expense(
+        item_name="Aluminium Beams",
+        amount=245.50,
+        category="Parts",
+        spent_by="Alex",
+    )
+    robotics_club.add_expense(
+        item_name="Competition Registration",
+        amount=500.00,
+        category="Events",
+        spent_by="Jordan",
+    )
+    robotics_club.add_expense(
+        item_name="Pizza for Build Night",
+        amount=85.25,
+        category="Food",
+        spent_by="Taylor",
+    )
+    robotics_club.add_expense(
+        item_name="Motor Controllers",
+        amount=190.00,
+        category="Parts",
+        spent_by="Alex",
+    )
+
+    # Display financial summary
+    robotics_club.print_summary_dashboard()
