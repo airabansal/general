@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>High School Club Event & RSVP Hub</title>
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --success: #10b981;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 20px;
+    }
+
+    header {
+      max-width: 1000px;
+      margin: 0 auto 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 1.75rem;
+      color: var(--primary);
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 8px;
+    }
+
+    .tab-btn {
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--text-muted);
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      height: fit-content;
+    }
+
+    .panel h2 {
+      font-size: 1.2rem;
+      margin-bottom: 16px;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--text-muted);
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+
+    button.btn-primary {
+      width: 100%;
+      padding: 10px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button.btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .filter-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .event-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .event-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .event-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+
+    .event-info {
+      flex: 1;
+    }
+
+    .club-tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      background: #e0e7ff;
+      color: var(--primary);
+      border-radius: 4px;
+      margin-bottom: 6px;
+    }
+
+    .event-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .event-details {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .event-desc {
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+
+    .rsvp-btn {
+      padding: 8px 16px;
+      border: 1px solid var(--primary);
+      background: transparent;
+      color: var(--primary);
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .rsvp-btn.attending {
+      background: var(--success);
+      border-color: var(--success);
+      color: white;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-muted);
+      background: var(--card-bg);
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🏫 High School Club RSVP Hub</h1>
+    <div class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('all')">All Events</button>
+      <button class="tab-btn" onclick="switchTab('my-rsvps')">My Saved RSVPs (<span id="rsvp-count">0</span>)</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Left Column: Add Event Panel -->
+    <div class="panel">
+      <h2>📌 Post New Event</h2>
+      <form id="event-form" onsubmit="handleCreateEvent(event)">
+        <div class="form-group">
+          <label for="club-name">Club Name</label>
+          <select id="club-name" required>
+            <option value="Robotics Team">Robotics Team</option>
+            <option value="Speech & Debate">Speech & Debate</option>
+            <option value="Key Club">Key Club</option>
+            <option value="CS Club">CS Club</option>
+            <option value="Drama Club">Drama Club</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="event-title">Event Title</label>
+          <input type="text" id="event-title" placeholder="e.g., Weekly Build Night" required>
+        </div>
+        <div class="form-group">
+          <label for="event-date">Date & Time</label>
+          <input type="datetime-local" id="event-date" required>
+        </div>
+        <div class="form-group">
+          <label for="event-location">Location</label>
+          <input type="text" id="event-location" placeholder="e.g., Room 204 or Gym" required>
+        </div>
+        <div class="form-group">
+          <label for="event-desc">Description</label>
+          <textarea id="event-desc" rows="3" placeholder="Brief details..."></textarea>
+        </div>
+        <button type="submit" class="btn-primary">Post Event</button>
+      </form>
+    </div>
+
+    <!-- Right Column: Event Listing -->
+    <div>
+      <div class="filter-bar">
+        <select id="filter-club" onchange="renderEvents()">
+          <option value="ALL">All Clubs</option>
+          <option value="Robotics Team">Robotics Team</option>
+          <option value="Speech & Debate">Speech & Debate</option>
+          <option value="Key Club">Key Club</option>
+          <option value="CS Club">CS Club</option>
+          <option value="Drama Club">Drama Club</option>
+        </select>
+      </div>
+
+      <div id="event-grid" class="event-grid">
+        <!-- Events dynamically inserted here -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State initialization from LocalStorage or Defaults
+    let currentTab = 'all';
+    let events = JSON.parse(localStorage.getItem('club_events')) || [
+      {
+        id: '1',
+        club: 'CS Club',
+        title: 'Hackathon Info Session & Pizza',
+        date: '2026-09-10T15:30',
+        location: 'Computer Lab B',
+        desc: 'Learn about the upcoming regional high school hackathon and form teams!'
+      },
+      {
+        id: '2',
+        club: 'Robotics Team',
+        title: 'Chassis Welding Workshop',
+        date: '2026-09-12T16:00',
+        location: 'Engineering Shop',
+        desc: 'Safety training and basic welding for new drive team members.'
+      }
+    ];
+
+    let rsvps = JSON.parse(localStorage.getItem('user_rsvps')) || ['1'];
+
+    // Save Data to LocalStorage
+    function saveData() {
+      localStorage.setItem('club_events', JSON.stringify(events));
+      localStorage.setItem('user_rsvps', JSON.stringify(rsvps));
+    }
+
+    // Tab Switching Logic
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      if (tab === 'all') {
+        document.querySelectorAll('.tab-btn')[0].classList.add('active');
+      } else {
+        document.querySelectorAll('.tab-btn')[1].classList.add('active');
+      }
+      renderEvents();
+    }
+
+    // Toggle RSVP State for an Event
+    function toggleRSVP(eventId) {
+      if (rsvps.includes(eventId)) {
+        rsvps = rsvps.filter(id => id !== eventId);
+      } else {
+        rsvps.push(eventId);
+      }
+      saveData();
+      renderEvents();
+    }
+
+    // Create New Event
+    function handleCreateEvent(e) {
+      e.preventDefault();
+      const newEvent = {
+        id: Date.now().toString(),
+        club: document.getElementById('club-name').value,
+        title: document.getElementById('event-title').value,
+        date: document.getElementById('event-date').value,
+        location: document.getElementById('event-location').value,
+        desc: document.getElementById('event-desc').value
+      };
+
+      events.unshift(newEvent);
+      saveData();
+      document.getElementById('event-form').reset();
+      renderEvents();
+    }
+
+    // Format ISO Date String cleanly
+    function formatDate(isoStr) {
+      const d = new Date(isoStr);
+      return d.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+      });
+    }
+
+    // Render Event List
+    function renderEvents() {
+      const grid = document.getElementById('event-grid');
+      const selectedClub = document.getElementById('filter-club').value;
+      document.getElementById('rsvp-count').textContent = rsvps.length;
+
+      // Filter Logic
+      let filtered = events.filter(e => {
+        const matchesClub = (selectedClub === 'ALL' || e.club === selectedClub);
+        const matchesTab = (currentTab === 'all' || rsvps.includes(e.id));
+        return matchesClub && matchesTab;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div class="empty-state">
+            <h3>No events found</h3>
+            <p>${currentTab === 'my-rsvps' ? "You haven't RSVP'd to any events yet." : "No upcoming events match your selected filters."}</p>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(item => {
+        const isAttending = rsvps.includes(item.id);
+        return `
+          <div class="event-card">
+            <div class="event-info">
+              <span class="club-tag">${item.club}</span>
+              <h3 class="event-title">${item.title}</h3>
+              <div class="event-details">
+                📅 ${formatDate(item.date)} &nbsp;|&nbsp; 📍 ${item.location}
+              </div>
+              <p class="event-desc">${item.desc}</p>
+            </div>
+            <button 
+              class="rsvp-btn ${isAttending ? 'attending' : ''}" 
+              onclick="toggleRSVP('${item.id}')">
+              ${isAttending ? '✓ Going' : '+ RSVP'}
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Initial render on page load
+    renderEvents();
+  </script>
+</body>
+</html>
