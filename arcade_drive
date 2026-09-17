@@ -1,0 +1,54 @@
+def calculate_arcade_drive(x: float, y: float) -> tuple[float, float]:
+    """Converts Arcade Drive Joystick inputs (X, Y) to Left and Right motor powers.
+
+    Parameters:
+        x (float): Steering input (-1.0 = Full Left, +1.0 = Full Right)
+        y (float): Throttle input (-1.0 = Full Reverse, +1.0 = Full Forward)
+
+    Returns:
+        tuple[float, float]: (left_power, right_power) clamped between -1.0 and +1.0
+    """
+    # Step 1: Basic Arcade Drive Formula
+    left_power = y + x
+    right_power = y - x
+
+    # Step 2: Normalization / Scaling
+    # If a value exceeds 1.0 (e.g., full forward y=1.0 + full right x=1.0 = 2.0),
+    # scale both motors down proportionally to preserve the turning ratio.
+    max_magnitude = max(abs(left_power), abs(right_power))
+
+    if max_magnitude > 1.0:
+        left_power /= max_magnitude
+        right_power /= max_magnitude
+
+    return round(left_power, 3), round(right_power, 3)
+
+
+# --- Interactive Test Driver ---
+if __name__ == "__main__":
+    # Test Scenarios: (x_stick, y_stick, description)
+    test_cases = [
+        (0.0, 1.0, "Full Forward"),
+        (0.0, -1.0, "Full Reverse"),
+        (1.0, 0.0, "Spin Right in Place"),
+        (-1.0, 0.0, "Spin Left in Place"),
+        (0.5, 1.0, "Forward Right Curve (High Speed)"),
+        (1.0, 1.0, "Full Forward + Full Right (Clamping Test)"),
+        (0.0, 0.0, "Neutral / Stop"),
+    ]
+
+    print("=" * 65)
+    print("      DIFFERENTIAL DRIVE (ARCADE DRIVE) CALCULATOR TEST")
+    print("=" * 65)
+    print(
+        f"{'X (Steer)':<10} | {'Y (Throttle)':<12} | {'Left Motor':<12} | {'Right Motor':<12} | Description"
+    )
+    print("-" * 65)
+
+    for x, y, desc in test_cases:
+        left, right = calculate_arcade_drive(x, y)
+        print(
+            f"{x:<10.1f} | {y:<12.1f} | {left:<12.3f} | {right:<12.3f} | {desc}"
+        )
+
+    print("=" * 65)
